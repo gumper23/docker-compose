@@ -49,6 +49,15 @@ if ! check_mysql_online slave_2; then
 fi
 
 # Create a replication user on the master
-docker exec -it master mysql -uroot -proot -e "create user 'repl'@'%' identified by 'repl'"
+docker exec -it master mysql -uroot -proot -e "create user if not exists 'repl'@'%' identified by 'repl'"
 docker exec -it master mysql -uroot -proot -e "grant replication slave on *.* to 'repl'@'%'"
 docker exec -it master mysql -uroot -proot -e "flush privileges"
+
+# Setup replication
+docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases --master-data | tail -n +2 | docker exec -i slave_1 mysql -uroot -proot
+docker exec -it slave_1 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl'"
+docker exec -it slave_1 mysql -uroot -proot -e "start slave"
+
+docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases --master-data | tail -n +2 | docker exec -i slave_2 mysql -uroot -proot
+docker exec -it slave_2 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl'"
+docker exec -it slave_2 mysql -uroot -proot -e "start slave"
