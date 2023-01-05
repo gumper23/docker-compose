@@ -1,0 +1,40 @@
+---
+version: '3.9'
+services:
+
+  master:
+    image: "${MYSQL_IMAGE}:${MYSQL_TAG}"
+    container_name: master
+    hostname: master
+    ports:
+      - "13306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+    volumes:
+      - ./cnf/my.cnf.master:/etc/my.cnf
+
+  slave01:
+    image: "${MYSQL_IMAGE}:${MYSQL_TAG}"
+    container_name: slave_1
+    hostname: slave_1
+    ports:
+      - "23306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+    depends_on:
+      - master
+    volumes:
+      - ./cnf/my.cnf.slave01:/etc/my.cnf
+
+  slave02:
+    image: "${MYSQL_IMAGE}:${MYSQL_TAG}"
+    container_name: slave_2
+    hostname: slave_2
+    ports:
+      - "33306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+    depends_on:
+      - master
+    volumes:
+      - ./cnf/my.cnf.slave02:/etc/my.cnf
