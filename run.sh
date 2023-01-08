@@ -5,7 +5,7 @@ IFS=$'\n\t'
 # Local functions
 function check_mysql_online {
     CONTAINER="${1}"
-    echo "#--- Checking readiness of mysql in ${CONTAINER}"
+    echo "#--- Checking readiness of mysql in container ${CONTAINER}"
     for (( i=0; i<60; i++ )); do
         echo -n '.'
         docker exec -it "${CONTAINER}" mysqladmin -uroot -proot ping 2>/dev/null | grep "mysqld is alive"
@@ -39,12 +39,12 @@ if ! check_mysql_online master; then
     echo -e "Unable to start master container"
     exit 1
 fi
-if ! check_mysql_online slave_1; then
-    echo -e "Unable to start slave_1 container"
+if ! check_mysql_online slave01; then
+    echo -e "Unable to start slave01 container"
     exit 1
 fi
-if ! check_mysql_online slave_2; then
-    echo -e "Unable to start slave_2 container"
+if ! check_mysql_online slave02; then
+    echo -e "Unable to start slave02 container"
     exit 1
 fi
 
@@ -54,13 +54,19 @@ docker exec -it master mysql -uroot -proot -e "grant replication slave on *.* to
 docker exec -it master mysql -uroot -proot -e "flush privileges"
 
 # Setup replication
-docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases --master-data | tail -n +2 | docker exec -i slave_1 mysql -uroot -proot
-docker exec -it slave_1 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl'"
-docker exec -it slave_1 mysql -uroot -proot -e "start slave"
+docker exec -it slave01 mysql -uroot -proot -e "set global read_only=0"
+docker exec -it slave01 mysql -uroot -proot -e "reset master"
+docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases | tail -n +2 | docker exec -i slave01 mysql -uroot -proot
+docker exec -it slave01 mysql -uroot -proot -e "set global super_read_only=1"
+docker exec -it slave01 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl', master_auto_position=1"
+docker exec -it slave01 mysql -uroot -proot -e "start slave"
 
-docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases --master-data | tail -n +2 | docker exec -i slave_2 mysql -uroot -proot
-docker exec -it slave_2 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl'"
-docker exec -it slave_2 mysql -uroot -proot -e "start slave"
+docker exec -it slave02 mysql -uroot -proot -e "set global read_only=0"
+docker exec -it slave02 mysql -uroot -proot -e "reset master"
+docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases | tail -n +2 | docker exec -i slave02 mysql -uroot -proot
+docker exec -it slave02 mysql -uroot -proot -e "set global super_read_only=1"
+docker exec -it slave02 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl', master_auto_position=1"
+docker exec -it slave02 mysql -uroot -proot -e "start slave"
 
 # Setup orchestrator
 docker exec -it master mysql -uroot -proot -e "create database if not exists orchestrator"
@@ -75,3 +81,5 @@ docker exec -it master mysql -uroot -proot -e "flush privileges"
 
 docker exec -e ORCHESTRATOR_API="http://localhost:3000/api" orchestrator \
   /usr/local/orchestrator/resources/bin/orchestrator-client -c discover -i master
+
+docker compose ps
