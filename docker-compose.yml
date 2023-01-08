@@ -38,3 +38,12 @@ services:
       - master
     volumes:
       - ./cnf/my.cnf.slave02:/etc/my.cnf
+
+  orchestrator:
+    image: "${ORCHESTRATOR_IMAGE}:${ORCHESTRATOR_TAG}"
+    container_name: orchestrator
+    hostname: orchestrator
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./cnf/orchestrator.cnf:/etc/orchestrator.conf.json

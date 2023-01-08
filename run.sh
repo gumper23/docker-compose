@@ -61,3 +61,17 @@ docker exec -it slave_1 mysql -uroot -proot -e "start slave"
 docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases --master-data | tail -n +2 | docker exec -i slave_2 mysql -uroot -proot
 docker exec -it slave_2 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl'"
 docker exec -it slave_2 mysql -uroot -proot -e "start slave"
+
+# Setup orchestrator
+docker exec -it master mysql -uroot -proot -e "create database if not exists orchestrator"
+docker exec -it master mysql -uroot -proot -e "create user if not exists 'orchestrator'@'%' identified by 'orchestrator'"
+docker exec -it master mysql -uroot -proot -e "grant super, process, replication slave, replication client, reload on *.* to 'orchestrator'@'%'"
+docker exec -it master mysql -uroot -proot -e "grant drop on _pseudo_gtid_.* to 'orchestrator'@'%'"
+docker exec -it master mysql -uroot -proot -e "grant select on mysql.slave_master_info to 'orchestrator'@'%'"
+docker exec -it master mysql -uroot -proot -e "grant select on orchestrator.* to 'orchestrator'@'%'"
+docker exec -it master mysql -uroot -proot -e "create table if not exists orchestrator.cluster(anchor tinyint not null, cluster_name varchar(128) charset ascii not null default '', cluster_domain varchar(128) charset ascii not null default '', primary key (anchor))"
+docker exec -it master mysql -uroot -proot -e "insert into orchestrator.cluster values(1, 'gumper', 'gumper')"
+docker exec -it master mysql -uroot -proot -e "flush privileges"
+
+docker exec -e ORCHESTRATOR_API="http://localhost:3000/api" orchestrator \
+  /usr/local/orchestrator/resources/bin/orchestrator-client -c discover -i master
