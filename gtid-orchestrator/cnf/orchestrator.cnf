@@ -93,6 +93,7 @@
   "RecoverIntermediateMasterClusterFilters": [
     "*"
   ],
+  "ReplicationCredentialsQuery": "SELECT 'repl', 'repl'",
   "OnFailureDetectionProcesses": [
     "date >> /tmp/recovery.log",
     "echo 'Detected {failureType} on {failureCluster}. Affected replicas: {countSlaves}' >> /tmp/recovery.log"
@@ -126,5 +127,6 @@
   "GraphitePath": "",
   "GraphiteConvertHostnameDotsToUnderscores": true,
   "FailMasterPromotionIfSQLThreadNotUpToDate": false,
-  "DelayMasterPromotionIfSQLThreadNotUpToDate": false
+  "DelayMasterPromotionIfSQLThreadNotUpToDate": false,
+  "UseSuperReadOnly": true
 }

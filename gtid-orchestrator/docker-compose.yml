@@ -45,6 +45,9 @@ services:
     hostname: orchestrator
     ports:
       - "3000:3000"
+    environment:
+      MYSQL_REPLICATION_USER: "${MYSQL_REPLICATION_USER}"
+      MYSQL_REPLICATION_PASSWORD: "${MYSQL_REPLICATION_PASSWORD}"
     depends_on:
       - master
       - slave01

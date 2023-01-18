@@ -1,0 +1,20 @@
+# my.cnf file to override options set in /etc/my.cnf file for slave
+[mysqld]
+server_id = 102
+
+log_bin = slave02-bin
+log_slave_updates = 1
+binlog_format = ROW
+
+innodb_buffer_pool_size = 64MB
+
+#super_read_only=1
+enforce_gtid_consistency=on
+gtid_mode=on
+
+report-port=3306
+report-host="slave02"
+
+[client]
+user=root
+password=root

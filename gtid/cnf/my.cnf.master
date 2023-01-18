@@ -1,0 +1,19 @@
+# my.cnf file to override options set in /etc/my.cnf file for the master
+[mysqld]
+server_id = 100
+
+log_bin = master-bin
+log_slave_updates = 1
+binlog_format = ROW
+
+innodb_buffer_pool_size = 64MB
+
+enforce_gtid_consistency=on
+gtid_mode=on
+
+report-port=3306
+report-host="master"
+
+[client]
+user=root
+password=root
