@@ -30,7 +30,7 @@ fi
 if [[ "${UP_OR_DOWN}" == 'up' ]]; then
     docker compose up --detach
 else
-    docker compose down
+    docker compose down -t60
     exit 0
 fi
 
@@ -57,6 +57,7 @@ docker exec -it master mysql -uroot -proot -e "flush privileges"
 docker exec -it slave01 mysql -uroot -proot -e "set global read_only=0"
 docker exec -it slave01 mysql -uroot -proot -e "reset master"
 docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases | tail -n +2 | docker exec -i slave01 mysql -uroot -proot
+docker exec -it slave01 mysql -uroot -proot -e "set session sql_log_bin=0; flush privileges;"
 docker exec -it slave01 mysql -uroot -proot -e "set global super_read_only=1"
 docker exec -it slave01 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl', master_auto_position=1"
 docker exec -it slave01 mysql -uroot -proot -e "start slave"
@@ -65,6 +66,7 @@ docker exec -it slave01 mysql -uroot -proot -e "start slave"
 docker exec -it slave02 mysql -uroot -proot -e "set global read_only=0"
 docker exec -it slave02 mysql -uroot -proot -e "reset master"
 docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases | tail -n +2 | docker exec -i slave02 mysql -uroot -proot
+docker exec -it slave02 mysql -uroot -proot -e "set session sql_log_bin=0; flush privileges;"
 docker exec -it slave02 mysql -uroot -proot -e "set global super_read_only=1"
 docker exec -it slave02 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl', master_auto_position=1"
 docker exec -it slave02 mysql -uroot -proot -e "start slave"
