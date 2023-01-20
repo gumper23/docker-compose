@@ -8,7 +8,7 @@ function check_mysql_online {
     echo "#--- Checking readiness of mysql in container ${CONTAINER}"
     for (( i=0; i<60; i++ )); do
         echo -n '.'
-        docker exec -it "${CONTAINER}" mysqladmin -uroot -proot ping 2>/dev/null | grep "mysqld is alive"
+        docker exec -it "${CONTAINER}" mysqladmin  ping 2>/dev/null | grep "mysqld is alive"
         RETVAL="${?}"
         if [[ "${RETVAL}" -eq 0 ]]; then
             break
@@ -49,26 +49,20 @@ if ! check_mysql_online slave02; then
 fi
 
 # Create a replication user on the master
-docker exec -it master mysql -uroot -proot -e "create user if not exists 'repl'@'%' identified by 'repl'"
-docker exec -it master mysql -uroot -proot -e "grant replication slave on *.* to 'repl'@'%'"
-docker exec -it master mysql -uroot -proot -e "flush privileges"
+docker exec -it master mysql  -e "create user if not exists 'repl'@'%' identified by 'repl'"
+docker exec -it master mysql  -e "grant replication slave on *.* to 'repl'@'%'"
+docker exec -it master mysql  -e "flush privileges"
 
 # Setup replication on slave01
-docker exec -it slave01 mysql -uroot -proot -e "set global read_only=0"
-docker exec -it slave01 mysql -uroot -proot -e "reset master"
-docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases | tail -n +2 | docker exec -i slave01 mysql -uroot -proot
-docker exec -it slave01 mysql -uroot -proot -e "set session sql_log_bin=0; flush privileges;"
-docker exec -it slave01 mysql -uroot -proot -e "set global super_read_only=1"
-docker exec -it slave01 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl', master_auto_position=1"
-docker exec -it slave01 mysql -uroot -proot -e "start slave"
+docker exec -it slave01 mysql  -e "set global read_only=0; reset master"
+docker exec -it master mysqldump --single-transaction --events --routines --triggers --all-databases | docker exec -i slave01 mysql 
+docker exec -it slave01 mysql  -e "set session sql_log_bin=0; flush privileges; set global super_read_only=1"
+docker exec -it slave01 mysql  -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl', master_auto_position=1; start slave"
 
 # Setup replication on slave02
-docker exec -it slave02 mysql -uroot -proot -e "set global read_only=0"
-docker exec -it slave02 mysql -uroot -proot -e "reset master"
-docker exec -it master mysqldump -uroot -proot --single-transaction --events --routines --triggers --all-databases | tail -n +2 | docker exec -i slave02 mysql -uroot -proot
-docker exec -it slave02 mysql -uroot -proot -e "set session sql_log_bin=0; flush privileges;"
-docker exec -it slave02 mysql -uroot -proot -e "set global super_read_only=1"
-docker exec -it slave02 mysql -uroot -proot -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl', master_auto_position=1"
-docker exec -it slave02 mysql -uroot -proot -e "start slave"
+docker exec -it slave02 mysql  -e "set global read_only=0; reset master"
+docker exec -it master mysqldump --single-transaction --events --routines --triggers --all-databases | docker exec -i slave02 mysql 
+docker exec -it slave02 mysql  -e "set session sql_log_bin=0; flush privileges; set global super_read_only=1"
+docker exec -it slave02 mysql  -e "change master to master_host='master', master_port=3306, master_user='repl', master_password='repl', master_auto_position=1; start slave"
 
 docker compose ps
